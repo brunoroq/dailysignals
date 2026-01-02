@@ -14,7 +14,7 @@ def read_wav_mono(path: str):
     with wave.open(path, "rb") as wf:
         fs=wf.getframerate()
         n_channels=wf.getnchannels()
-        sampwidth=wf.sampwidth() #bytes
+        sampwidth=wf.getsampwidth() #bytes
         n_frames=wf.getnframes()
         raw=wf.readframes(n_frames)
         
