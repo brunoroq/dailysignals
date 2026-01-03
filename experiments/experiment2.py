@@ -5,43 +5,41 @@ import wave
 #-------------------------
 #WAV I/O
 #-------------------------
-def read_wav_mono(path: str):
-    """
-    Lee el WAV PCM (8/16/24/32-bit int). retorna (x, fs)
-    x: float32 mono en [-1,1]
-    si es stereo, mezcla a mono promediando los inputs.
-    """
+def read_wav_mono(path: str, return_sampwidth=False):
     with wave.open(path, "rb") as wf:
-        fs=wf.getframerate()
-        n_channels=wf.getnchannels()
-        sampwidth=wf.getsampwidth() #bytes
-        n_frames=wf.getnframes()
-        raw=wf.readframes(n_frames)
-        
-        if sampwidth==1:
-                #unsigned 8-bit
-                x=np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
-                x=(x-128.0)/128.0
-        elif sampwidth==2:
-                x=np.frombuffer(raw,dtype=np.init16).astype(np.float32)
-                x=x/32768.0
-        elif sampwidth==3:
-                #24-bit PCM: parse manual
-                b=np.frombuffer(raw, dtype=np.uint8).reshape(-1,3)
-                x=(b[:,0].astype(np.int32) |
-                (b[:,1].astype(np.int32)<<8) |
-                (b[:,2].astype(np.int32)<<16))
-                sign=(x & 0x80000)!=0
-                x=x-(sign.astype(np.int32)<<24)
-                x=x.astype(np.float32)/8388608.0
-        elif sampwidth==4:
-                x=np.frombuffer(raw, dtype=np.init32).astype(np.float32)
-                x=x/2147483648.0
-        else:
-                raise ValueError(f"unsupported sample witdh: {sampwidth} bytes")
-        if n_channels>1:
-                x=x.reshape(-1, n_channels).mean(axis=1)
-        return x.astype(np.float32),fs
+        fs = wf.getframerate()
+        n_channels = wf.getnchannels()
+        sampwidth = wf.getsampwidth()   # bytes: 2=16bit, 3=24bit, 4=32bit
+        n_frames = wf.getnframes()
+        raw = wf.readframes(n_frames)
+
+    if sampwidth == 2:
+        x = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+
+    elif sampwidth == 3:
+        # 24-bit little-endian -> int32 con sign-extend
+        b = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 3)
+        x = (b[:,0].astype(np.int32) |
+             (b[:,1].astype(np.int32) << 8) |
+             (b[:,2].astype(np.int32) << 16))
+        # sign extend
+        x = (x << 8) >> 8
+        x = x.astype(np.float32) / (2**23)
+
+    elif sampwidth == 4:
+        # puede ser int32 PCM
+        x = np.frombuffer(raw, dtype=np.int32).astype(np.float32) / (2**31)
+
+    else:
+        raise ValueError(f"sampwidth no soportado: {sampwidth} bytes")
+
+    # separar canales si aplica
+    if n_channels > 1:
+        x = x.reshape(-1, n_channels).mean(axis=1)
+
+    if return_sampwidth:
+        return x, fs, sampwidth
+    return x, fs
     
 def write_wav_int16_mono(path:str, x: np.ndarray, fs:int):
     """

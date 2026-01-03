@@ -64,36 +64,34 @@ ax_x.set_title("x[k] (Trozo de WAV)")
 ax_x.set_xlim(nx[0], nx[-1])
 
 def update(frame):
-    n=ny[frame]
+    n = ny[frame]
 
-    k_h=n-nh
-    h_shift_vals=h
-    
-    prod=np.zeros_like(nx, dtype=np.float32)
-    
-    h_map=dict(zip(k_h, h_shift_vals))
-    
-    for i,k in enumerate(nx):
-        prod[i]=x[i]*h_map.get(k,0.0)
-    y[frame]=float(np.sum(prod))
-    
-    #limpiar ejes variables
+    h_shift_on_k = np.zeros_like(x, dtype=np.float32)
+    prod = np.zeros_like(x, dtype=np.float32)
+
+    for i, k in enumerate(nx):
+        idx = n - k
+        if 0 <= idx < len(h):
+            h_shift_on_k[i] = h[idx]
+            prod[i] = x[i] * h[idx]
+
+    y[frame] = float(np.sum(prod))
+
     ax_h.cla(); ax_prod.cla(); ax_y.cla()
     for ax in (ax_h, ax_prod, ax_y):
         ax.grid(True)
-        
-    #h[n-k]
-    ax_h.stem(k_h, h_shift_vals, basefmt='C1-', marketfmt='C1o')
-    ax_h.set_title(f"h[n-k], n={n}")
+
+    ax_h.stem(nx, h_shift_on_k, basefmt='C1-', markerfmt='C1o')
+    ax_h.set_title(f"h[n-k] sobre k, n={n}")
     ax_h.set_xlim(nx[0], nx[-1])
-    
-    # producto
+    ax_h.set_ylim(-0.1, 1.05*np.max(np.abs(h)) + 1e-6)
+
     ax_prod.stem(nx, prod, basefmt='g-', markerfmt='go')
     ax_prod.set_title("x[k] · h[n-k]")
     ax_prod.set_xlim(nx[0], nx[-1])
-    ax_prod.set_ylim(-1.05*np.max(np.abs(x)), 1.05*np.max(np.abs(x)) + 1e-6)
+    m = 1.05 * (np.max(np.abs(x)) + 1e-6)
+    ax_prod.set_ylim(-m, m)
 
-    # y acumulado
     ax_y.stem(ny[:frame+1], y[:frame+1], basefmt='r-', markerfmt='ro')
     ax_y.set_title(f"y[n] acumulado, n={n}")
     ax_y.set_xlim(ny[0], ny[min(len(ny)-1, n_frames-1)])
