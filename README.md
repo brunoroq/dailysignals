@@ -4,7 +4,7 @@ Repositorio personal de experimentos y pequeñas implementaciones
 relacionadas con **Signals and Systems** (Oppenheim).
 
 Basado en el curso del MIT OpenCourseWare.
-Objetivo: práctica diaria, exploración y registro personal.
+Objetivo: práctica, exploración y registro personal.
 
 ## Contenido
 - Señales seno/coseno
