@@ -14,3 +14,5 @@ Objetivo: práctica, exploración y registro personal.
 - Ploteos en tiempo continuo y discreto
 - Convolución
 
+## Necesario
+- pip install numpy scipy soundfile librosa
